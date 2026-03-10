@@ -3,7 +3,8 @@
 ## Environment
 - Python 3.13 | Windows 11
 - Package manager: `uv` — use `uv venv` + `uv pip install -e .`
-- Run: `.venv/Scripts/python.exe posture_monitor.py` or `uv run python posture_monitor.py`
+- Run (no terminal): double-click `run.pyw` or `.venv/Scripts/pythonw.exe posture_monitor.py`
+- Run (with terminal for debugging): `.venv/Scripts/python.exe posture_monitor.py`
 
 ## Conventions
 - Logging: loguru — `logger.add(LOG_PATH, rotation="1 MB", retention=3)`
@@ -24,3 +25,5 @@
 ## Threading
 - `pystray` must run on the main thread — detection runs in a daemon thread
 - `cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)` prevents stale webcam frames
+- Preview window (tkinter) runs in its own daemon thread; frame data shared via `_frame_lock`
+- Camera loop runs at ~18 FPS when preview is open, drops to `process_fps` when closed

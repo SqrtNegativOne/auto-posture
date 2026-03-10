@@ -13,7 +13,7 @@ dependencies = [
     "loguru>=0.7",
 ]
 
-[project.scripts]
+[project.gui-scripts]
 posture-monitor = "posture_monitor:main"
 
 [tool.uv]
