@@ -103,7 +103,13 @@ def _ensure_model() -> str:
     """Download the MediaPipe Lite pose model on first run; return its path."""
     if not MODEL_PATH.exists():
         logger.info(f"Downloading pose model -> {MODEL_PATH} ...")
-        urllib.request.urlretrieve(_MODEL_URL, MODEL_PATH)
+        tmp_path = MODEL_PATH.with_suffix(".tmp")
+        try:
+            urllib.request.urlretrieve(_MODEL_URL, tmp_path)
+            tmp_path.replace(MODEL_PATH)
+        except Exception:
+            tmp_path.unlink(missing_ok=True)
+            raise
         logger.success("Model downloaded")
     return str(MODEL_PATH)
 
@@ -135,13 +141,13 @@ class MediaPipeAnalyzer:
             min_tracking_confidence=0.50,
         )
         self._landmarker = mp_vision.PoseLandmarker.create_from_options(options)
-        self._start_ms   = int(time.time() * 1000)
+        self._start_mono = time.monotonic()
         logger.info("MediaPipe Pose analyser ready (Tasks API)")
 
     def analyze(self, frame) -> Optional[dict]:
         rgb      = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
-        ts_ms    = int(time.time() * 1000) - self._start_ms
+        ts_ms    = int((time.monotonic() - self._start_mono) * 1000)
 
         result = self._landmarker.detect_for_video(mp_image, ts_ms)
         if not result.pose_landmarks:
@@ -685,10 +691,10 @@ def main() -> None:
     config  = load_config()
     monitor = SlouchMonitor(config, on_status_change=lambda _: None)
 
+    tray = build_tray(monitor, config)
+
     thread = threading.Thread(target=monitor.run, daemon=True, name="PostureMonitor")
     thread.start()
-
-    tray = build_tray(monitor, config)
     logger.info("System tray active -- left-click the icon to open the monitor")
 
     try:
